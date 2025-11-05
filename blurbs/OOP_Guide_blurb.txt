@@ -1,0 +1,72 @@
+VERSION 1 (Recommended - Direct & Clear)
+==========================================
+
+I wrote the OOP guide I wish existed when I started learning Python.
+
+Most tutorials teach syntax with toy examples that don't need OOP. They skip the paradigm shift from functional thinking and never address the real challenge: deciding what goes where.
+
+This guide is different:
+
+- Why OOP feels alien (functional vs stateful thinking)
+- Everything is an object (even functions)
+- Use cases that genuinely need OOP
+- Paying it forward: @property, __str__, __repr__
+- Polymorphism with real examples
+- Plugin architecture (sophisticated example)
+- The hard part: deciding what does what
+- Design patterns as a path forward
+
+It's honest about the confusion, practical about the payoff, and addresses the architectural decisions that paralyze you after learning syntax.
+
+[Link to gist]
+
+If you've struggled with OOP or know someone who has, this might help.
+
+#Python #OOP #Programming #LearnToCode
+
+
+VERSION 2 (Shorter Hook)
+==========================================
+
+Object-Oriented Programming clicked for me when I stopped memorizing syntax and started understanding why it exists.
+
+I wrote the guide I needed back then:
+
+- Why OOP feels alien (paradigm shift)
+- Everything is an object (even functions)
+- Use cases that genuinely need OOP
+- @property, __str__, __repr__ (the polish)
+- Plugin architecture example
+- The hard part: deciding what does what
+- Path to design patterns
+
+It addresses what most tutorials skip: the architectural thinking that matters after you learn syntax.
+
+[Link to gist]
+
+#Python #OOP #Programming #LearnToCode
+
+
+VERSION 3 (Problem-Focused)
+==========================================
+
+You learned classes and inheritance. You passed the exercises. But when you try to build something real, you're stuck: Should this be a method? Which class owns this behavior?
+
+The syntax is easy. The design decisions are hard.
+
+I wrote an OOP guide that addresses this:
+
+- Functional vs OOP paradigm shift
+- Everything is an object (you're already using it)
+- Examples that need OOP (not toy tasks)
+- @property, __str__, __repr__ explained
+- Plugin architecture (real sophistication)
+- What does what (the actual challenge)
+- Design patterns pathway
+
+Honest about the confusion, practical about the payoff.
+
+[Link to gist]
+
+#Python #OOP #Programming #LearnToCode
+
