@@ -1,36 +1,45 @@
-# Extracting Lines from Files: Use the Right Tool (2025)
+# Text Processing in 2025: A Tool Landscape
 
-You're need lines 2840 through 2860—just the error and its immediate context from a massive log file. 
+You need lines 2840 through 2860 from a massive log file. So, `sed`, right?
 
-So, ```sed```, right? 
+Maybe. Or `bat`. Or `ripgrep`. Or Python.
 
-Right?
+The Unix text processing toolkit has evolved. Rust rewrote half of it with better UX and performance. Meanwhile, sed and awk are still here, doing what they've always done.
 
-Maybe. Turns out, sometimes you should use `sed`. Sometimes you shouldn't. We've got cool new tools now, thanks to Rust. Here's how to know the difference.
+This guide goes **deep on line extraction** (that's the most common task) and surveys the rest of the text processing landscape: find/replace, field processing, and when to bail to Python.
 
-**Time investment:** 5-minute read. The examples work in under 30 seconds each.
+**Time investment:** 10-minute read for the full tour. The line extraction section alone is 5 minutes.
 
-**Bottom line:** For known line numbers, `bat` is easier. For context around search terms, `ripgrep` is faster. For pattern-to-pattern ranges, `sed` is still the only good option. For complex logic, use Python.
+**Structure:** Deep dive on line extraction, brief survey of other text processing tasks, decision frameworks throughout.
 
 ---
 
 ## Table of Contents
 
-- [The Decision Tree](#the-decision-tree)
-- [Use Case 1: Known Line Numbers → bat](#use-case-1-known-line-numbers--bat)
-- [Use Case 2: Context Around Matches → ripgrep](#use-case-2-context-around-matches--ripgrep)
-- [Use Case 3: Pattern-to-Pattern Ranges → sed](#use-case-3-pattern-to-pattern-ranges--sed)
-- [Use Case 4: Complex Logic → Python](#use-case-4-complex-logic--python)
+**Part 1: Line Extraction (Deep Dive)**
+- [Line Extraction Decision Tree](#line-extraction-decision-tree)
+- [Known Line Numbers → bat](#use-case-1-known-line-numbers--bat)
+- [Context Around Matches → ripgrep](#use-case-2-context-around-matches--ripgrep)
+- [Pattern-to-Pattern Ranges → sed](#use-case-3-pattern-to-pattern-ranges--sed)
+- [Complex Logic → Python](#use-case-4-complex-logic--python)
+- [When Line Extraction Breaks](#when-things-break)
+
+**Part 2: Other Text Processing (Survey)**
+- [Find & Replace](#find--replace)
+- [Field Processing](#field-processing)
 - [The bash vs Python Boundary](#the-bash-vs-python-boundary)
-- [When Things Break](#when-things-break)
-- [What I Actually Do](#what-i-actually-do)
-- [Next Steps](#next-steps)
+
+**Practical Guidance**
+- [What I Actually Use](#what-i-actually-use)
+- [Decision Framework Summary](#decision-framework-summary)
 
 ---
 
-## The Decision Tree
+# Part 1: Line Extraction (Deep Dive)
 
-**Start here. Pick your scenario, skip to that section.**
+## Line Extraction Decision Tree
+
+**Start here for line extraction. Pick your scenario, skip to that section.**
 
 - **I know the exact line numbers** (e.g., lines 340-380) → [Use bat](#use-case-1-known-line-numbers--bat)
 - **I need lines around a search term** (e.g., 5 lines before/after "ERROR") → [Use ripgrep](#use-case-2-context-around-matches--ripgrep)
@@ -460,6 +469,152 @@ When in doubt, test your pattern with `grep` first to verify it matches.
 
 ---
 
+# Part 2: Other Text Processing (Survey)
+
+## Find & Replace
+
+### Modern Approach: sd
+
+```bash
+sd 'old_text' 'new_text' file.txt
+```
+
+**What sd does:** Find and replace with sane syntax. Uses regex from JavaScript/Python (the syntax you already know). 2-11x faster than sed for substitution.
+
+**Installation:**
+```bash
+brew install sd              # macOS
+cargo install sd             # via Rust
+```
+
+**Examples:**
+```bash
+# Simple replacement
+sd 'foo' 'bar' file.txt
+
+# Regex with capture groups
+sd '(\w+)@(\w+)' '$1@example.com' emails.txt
+
+# In-place edit (like sed -i)
+sd 'old' 'new' file.txt
+
+# Preview before replacing
+sd 'old' 'new' file.txt --preview
+```
+
+**When to use sd:** You're doing find/replace and don't want to remember sed's escaping rules.
+
+---
+
+### Classic Approach: sed
+
+```bash
+# Basic substitution
+sed 's/old/new/g' file.txt
+
+# In-place editing
+sed -i '' 's/old/new/g' file.txt  # macOS
+sed -i 's/old/new/g' file.txt     # Linux
+
+# Replace only on lines matching a pattern
+sed '/pattern/s/old/new/g' file.txt
+```
+
+**When to use sed:** It's everywhere. You already know the syntax. You're doing more than just substitution (combining with line ranges, etc.).
+
+**sed's advantage:** Can combine substitution with line selection. sd can't do this:
+```bash
+# Replace only in lines 10-20
+sed '10,20s/old/new/g' file.txt
+
+# Replace only between patterns
+sed '/START/,/END/s/old/new/g' file.txt
+```
+
+---
+
+### Interactive Multi-File: amber
+
+```bash
+ambr 'search' 'replace'      # Interactive prompts for each match
+```
+
+**What it does:** Search and replace across directories with confirmation for each change. Like your editor's "find in files" but command-line.
+
+**Installation:** https://github.com/dalance/amber
+
+**When to use it:** Refactoring across multiple files where you want to review each change. Most people use their editor for this.
+
+---
+
+## Field Processing
+
+### Column Operations: awk
+
+```bash
+# Print third column
+awk '{print $3}' data.txt
+
+# CSV with custom delimiter
+awk -F',' '{print $3}' data.csv
+
+# Filter rows where column 2 > 100
+awk '$2 > 100' data.txt
+
+# Sum numbers in second column
+awk '{sum += $2} END {print sum}' numbers.txt
+
+# Multiple conditions
+awk '$2 > 100 && $3 < 50 {print $1, $2}' data.txt
+```
+
+**What awk excels at:**
+- Processing tabular/columnar data
+- Quick field extraction and filtering
+- Simple calculations on columns
+- Log file analysis (splitting on whitespace)
+
+**When to use awk:**
+- Working with structured text (CSV, logs, tables)
+- Simple field operations (print, filter, sum)
+- One-liner territory
+
+**When to use Python instead:**
+- Logic exceeds a few conditions
+- Need proper CSV parsing (quoted fields, escapes)
+- Calculations requiring libraries
+- Readability for others matters
+
+---
+
+### Python for Structured Data
+
+```python
+# Simple field extraction
+with open('data.txt') as f:
+    for line in f:
+        fields = line.split()
+        if len(fields) >= 3 and int(fields[1]) > 100:
+            print(fields[0], fields[2])
+```
+
+```python
+# Proper CSV handling
+import csv
+with open('data.csv') as f:
+    for row in csv.DictReader(f):
+        if int(row['amount']) > 100:
+            print(row['name'], row['total'])
+```
+
+**Python wins when:**
+- CSV files with quoted fields, embedded commas
+- Complex field logic
+- Need libraries (datetime parsing, calculations)
+- Part of larger script
+
+---
+
 ## What I Actually Do
 
 **When I'm exploring a codebase:**
@@ -483,46 +638,56 @@ When in doubt, test your pattern with `grep` first to verify it matches.
 - `sed` — use it weekly for pattern ranges
 - Python — when the one-liner fights back
 
+**For find/replace:**
+- `sd` for simple substitutions (better UX than sed)
+- `sed` when combining with line ranges
+- Editor's find/replace for interactive multi-file
+
+**For field processing:**
+- `awk` for quick column operations on logs
+- Python when CSV gets complex or logic exceeds one-liner
+
 **Tools I don't install:**
-- `sd`, `amber`, other sed alternatives — solving problems I don't have
-- Complex awk scripts — if I need that much logic, I use Python
-
----
-
-## Next Steps
-
-**If you're comfortable with line extraction, the next level is field extraction and transformation.**
-
-That's where `awk` enters the picture. `awk` is to columns what `sed` is to lines—a specialized tool for a specific job.
-
-Quick taste of what `awk` does:
-```bash
-# Print the third column of CSV data
-awk -F',' '{print $3}' data.csv
-
-# Sum all numbers in the second column
-awk '{sum += $2} END {print sum}' numbers.txt
-```
-
-But that's a whole other article. For now, you've got line extraction covered.
-
-**Related topics worth exploring:**
-- Stream editing and find/replace → `sd` (modern sed alternative)
-- Advanced text processing → `awk` (field-based processing)
-- Full codebase searching → `ripgrep` deep dive
+- `amber` — editor's find/replace does this better
+- Complex awk scripts — if it's complex, I use Python
 
 ---
 
 ## Decision Framework Summary
 
+**Line Extraction:**
+
 | Scenario | Tool | Why |
 |----------|------|-----|
 | Lines 340-380 | `bat -r 340:380` | Clearest syntax, best output |
 | 5 lines around "ERROR" | `rg -C 5 "ERROR"` | Fast, simple context |
-| From pattern to pattern | `sed -n '/start/,/end/p'` | Only tool that does this well |
-| Complex logic | Python | Explicit state, readable |
+| From pattern to pattern | `sed -n '/start/,/end/p'` | Only tool that does this |
+| Complex line logic | Python | Explicit state, readable |
+
+**Find & Replace:**
+
+| Scenario | Tool | Why |
+|----------|------|-----|
+| Simple substitution | `sd 'old' 'new'` | Better syntax than sed |
+| Replace in line range | `sed '10,20s/old/new/g'` | sed can combine ranges |
+| Multi-file refactor | Editor find/replace or `ambr` | Interactive review |
+
+**Field Processing:**
+
+| Scenario | Tool | Why |
+|----------|------|-----|
+| Print column 3 | `awk '{print $3}'` | Built for this |
+| Sum column values | `awk '{sum += $2} END {print sum}'` | Simple calculations |
+| Complex CSV | Python `csv` module | Proper parsing, readability |
+| Field logic with conditions | Python | When awk gets cryptic |
+
+**General:**
+
+| Scenario | Tool | Why |
+|----------|------|-----|
 | Just viewing a file | `bat` or `less` | Syntax highlighting, paging |
 | File under 100 lines | Your editor | Don't over-optimize |
+| Bash one-liner > 80 chars | Python | Readability, maintainability |
 
 **The real skill isn't mastering `sed`.** The real skill is knowing when to use `sed`, when to use `bat`, when to use `ripgrep`, and when to just write 5 lines of Python and move on.
 
